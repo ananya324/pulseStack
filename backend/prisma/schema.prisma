@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LogLevel {
+  debug
+  info
+  warn
+  error
+  fatal
+}
+
+enum IncidentStatus {
+  open
+  resolved
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  projects     Project[]
+
+  @@map("users")
+}
+
+model Project {
+  id         String          @id @default(uuid())
+  ownerId    String          @map("owner_id")
+  name       String
+  createdAt  DateTime        @default(now()) @map("created_at")
+  owner      User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  apiKeys    ApiKey[]
+  logs       Log[]
+  incidents  Incident[]
+
+  @@index([ownerId])
+  @@map("projects")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  projectId  String    @map("project_id")
+  keyHash    String    @unique @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("api_keys")
+}
+
+model Log {
+  id          BigInt   @id @default(autoincrement())
+  projectId   String   @map("project_id")
+  level       LogLevel
+  service     String
+  message     String
+  timestamp   DateTime
+  receivedAt  DateTime @default(now()) @map("received_at")
+  metadata    Json?
+  fingerprint String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, timestamp])
+  @@index([projectId, service, level, timestamp])
+  @@index([projectId, fingerprint])
+  @@map("logs")
+}
+
+model Incident {
+  id             String          @id @default(uuid())
+  projectId      String          @map("project_id")
+  service        String
+  status         IncidentStatus  @default(open)
+  startedAt      DateTime        @map("started_at")
+  resolvedAt     DateTime?       @map("resolved_at")
+  summary        String?
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  investigations Investigation[]
+
+  @@index([projectId, status])
+  @@index([projectId, startedAt])
+  @@map("incidents")
+}
+
+model Investigation {
+  id         String   @id @default(uuid())
+  incidentId String   @map("incident_id")
+  question   String
+  report     String
+  evidence   BigInt[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@map("investigations")
+}
