@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { authRouter } from "./modules/auth/auth.routes";
 import { projectsRouter } from "./modules/projects/projects.routes";
 import { logsRouter } from "./modules/logs/logs.routes";
+import { logsReadRouter } from "./modules/logs/logs.read.routes";
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(cookieParser());
 app.use("/auth", authRouter);
 app.use("/projects", projectsRouter);
 app.use("/v1/logs", logsRouter);
+app.use("/projects/:projectId", logsReadRouter);
 
 app.get("/health", async (_req: Request, res: Response) => {
   try {
