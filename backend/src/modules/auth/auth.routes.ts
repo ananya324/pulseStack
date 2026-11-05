@@ -2,8 +2,8 @@ import { Router, Response } from "express";
 import { registerSchema, loginSchema } from "./auth.schemas";
 import { registerUser, loginUser, AuthError } from "./auth.service";
 import { COOKIE_NAME } from "./auth.token";
-import { env } from "../../config/env";
-
+import { env } from "../../config/env";import { requireUser } from "../../middleware/requireUser";
+import { prisma } from "../../db/prisma";
 export const authRouter = Router();
 
 function setAuthCookie(res: Response, token: string) {
@@ -56,4 +56,15 @@ authRouter.post("/login", async (req, res) => {
 authRouter.post("/logout", (_req, res) => {
   res.clearCookie(COOKIE_NAME);
   res.json({ ok: true });
+});
+
+authRouter.get("/me", requireUser, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { id: true, email: true, createdAt: true },
+  });
+  if (!user) {
+    return res.status(401).json({ error: "User not found" });
+  }
+  res.json({ user });
 });
