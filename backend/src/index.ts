@@ -6,6 +6,8 @@ import { authRouter } from "./modules/auth/auth.routes";
 import { projectsRouter } from "./modules/projects/projects.routes";
 import { logsRouter } from "./modules/logs/logs.routes";
 import { logsReadRouter } from "./modules/logs/logs.read.routes";
+import { incidentsRouter } from "./modules/incidents/incidents.routes";
+import { startDetector } from "./modules/incidents/detector";
 
 const app = express();
 
@@ -16,6 +18,7 @@ app.use("/auth", authRouter);
 app.use("/projects", projectsRouter);
 app.use("/v1/logs", logsRouter);
 app.use("/projects/:projectId", logsReadRouter);
+app.use("/projects/:projectId", incidentsRouter);
 
 app.get("/health", async (_req: Request, res: Response) => {
   try {
@@ -38,4 +41,5 @@ app.get("/health", async (_req: Request, res: Response) => {
 
 app.listen(env.PORT, () => {
   console.log(`TracePilot API listening on http://localhost:${env.PORT}`);
+  startDetector();
 });
